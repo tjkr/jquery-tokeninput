@@ -21,6 +21,7 @@ var DEFAULT_SETTINGS = {
     jsonContainer: null,
 
 	// Display settings
+    dropdownContainer: "body",
     hintText: "Type in a search term",
     noResultsText: "No results",
     searchingText: "Searching...",
@@ -343,7 +344,7 @@ $.TokenList = function (input, url_or_data, settings) {
     // The list to store the dropdown items in
     var dropdown = $("<div>")
         .addClass(settings.classes.dropdown)
-        .appendTo("body")
+        .appendTo(settings.dropdownContainer)
         .hide();
 
     // Magic element to help us resize the text input
@@ -628,14 +629,15 @@ $.TokenList = function (input, url_or_data, settings) {
     }
 
     function show_dropdown() {
-        dropdown
-            .css({
-                position: "absolute",
-                top: $(token_list).offset().top + $(token_list).outerHeight(),
-                left: $(token_list).offset().left,
-                zindex: 999
-            })
-            .show();
+    	if ('body' === settings.dropdownContainer) {
+            dropdown.css({
+              position: "absolute",
+              top: $(token_list).offset().top + $(token_list).outerHeight(),
+              left: $(token_list).offset().left,
+              zindex: 9999
+          });    		
+    	}
+        dropdown.show();
     }
 
     function show_dropdown_searching () {
@@ -802,17 +804,22 @@ $.TokenList = function (input, url_or_data, settings) {
 
                 // Make the request
                 $.ajax(ajax_params);
-            } else if(settings.local_data) {
+            } else {
                 // Do the search through local data
-                var results = $.grep(settings.local_data, function (row) {
-                    return row[settings.propertyToSearch].toLowerCase().indexOf(query.toLowerCase()) > -1;
-                });
-
-                if($.isFunction(settings.onResult)) {
-                    results = settings.onResult.call(hidden_input, results);
-                }
-                cache.add(cache_key, results);
-                populate_dropdown(query, results);
+            	var data = settings.local_data;
+            	if(settings.local_data) {
+	            	var field = settings.propertyToSearch;
+	                var results = $.grep(data, function (row) {
+	                	var str = row[field].toLowerCase();
+	                    return str.indexOf(query.toLowerCase()) > -1;
+	                });
+	
+	                if($.isFunction(settings.onResult)) {
+	                    results = settings.onResult.call(hidden_input, results);
+	                }
+	                cache.add(cache_key, results);
+	                populate_dropdown(query, results);
+            	}
             }
         }
     }
@@ -820,6 +827,9 @@ $.TokenList = function (input, url_or_data, settings) {
     // compute the dynamic URL
     function computeURL() {
         var url = settings.url;
+        if (typeof settings.url == 'undefined') {
+        	return "";
+        }
         if(typeof settings.url == 'function') {
             url = settings.url.call();
         }
